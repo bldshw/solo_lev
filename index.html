@@ -4363,8 +4363,7 @@ function showEqTip(e,item){
   const tip=document.getElementById('eq-tooltip');
   const nmCls=rarCls(item.r);
   const stats=Object.entries(item.stats||{}).filter(([k,v])=>v!=null&&!['heal_min','mana_min'].includes(k)).map(([k,v])=>`<span style="color:var(--gold3)">+${v}</span> ${k.toUpperCase()}`).join('<br>');
-  const reqStr=item.req?`<div style="font-size:.58rem;color:var(--gold2);margin-top:3px">Req: ${reqLabel(item)}</div>`:'';
-
+  
   const setInfo=G&&G.p?getItemSetInfo(item):null;
   let setHtml='';
   if(setInfo){
@@ -4376,7 +4375,8 @@ function showEqTip(e,item){
       </div>`;
     }).join('');
   }
-  tip.innerHTML=`<div class="eq-tt-nm ${nmCls}">${item.ico} ${item.nm}</div><div class="eq-tt-stat">${stats||'Aucune stat'}</div>${reqStr}${item.foundFloor?`<div class="eq-tt-fl">Trouvé étage ${item.foundFloor}</div>`:''}${setHtml}`;
+  const reqFullStr=item.req&&item.req.length?`<div style="margin-top:5px;padding:4px 6px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:3px;font-size:.6rem"><span style="color:var(--gold2);font-family:var(--fo);letter-spacing:1px">PRÉREQUIS</span><br>${item.req.map(r=>{const names={str:'Force',agi:'Agilité',int:'Intelligence',vit:'Vitalité'};const met=(G.p[r.stat]||0)>=r.val;return`<span style="color:${met?'var(--green3)':'var(--red3)'}">${met?'✓':'✗'} ${names[r.stat]||r.stat} ${r.val} <span style="font-size:.55rem;opacity:.7">(${G.p[r.stat]||0})</span></span>`;}).join('<br>')}</div>`:'';
+  tip.innerHTML=`<div class="eq-tt-nm ${nmCls}">${item.ico} ${item.nm}</div><div class="eq-tt-stat">${stats||'Aucune stat'}</div>${reqFullStr}${item.foundFloor?`<div class="eq-tt-fl">Trouvé étage ${item.foundFloor}</div>`:''}${setHtml}`;
   tip.style.display='block';
   const x=e.clientX+12,y=e.clientY-10;
   tip.style.left=Math.min(x,window.innerWidth-275)+'px';
@@ -4546,7 +4546,7 @@ function renderInvModal(){
     const st=Object.entries(item.stats||{}).filter(([k,v])=>v!=null&&!['heal_min','mana_min'].includes(k)).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ');
     const nmCls=rarCls(item.r);
     const canEquip=meetsReq(item);
-    const reqTxt=item.req?`<span style="font-size:.58rem;color:${canEquip?'var(--green3)':'var(--red3)'}">Req: ${reqLabel(item)}</span>`:'';
+    const reqTxt=item.req?`<span style="font-size:.68rem;color:${canEquip?'var(--green3)':'var(--red3)'}">Req: ${reqLabel(item)}</span>`:'';
     row.innerHTML=`<div class="inv-item-ico">${spriteOrIco(item.nm,item.ico,'1.2rem')}</div>
       <div class="inv-item-info">
         <div class="inv-item-nm ${nmCls}">${item.nm}${getSetBadge(item)}</div>
@@ -4617,7 +4617,7 @@ function meetsReq(item){
 function reqLabel(item){
   if(!item.req||!item.req.length)return '';
   const names={str:'FOR',agi:'AGI',int:'INT',vit:'VIT'};
-  return item.req.map(r=>`${names[r.stat]}${r.val}`).join(' & ');
+  return item.req.map(r=>`${names[r.stat]} ${r.val}`).join(' & ');
 }
 
 function equipItem(idx){
