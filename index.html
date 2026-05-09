@@ -2127,11 +2127,11 @@ function renderSkills(){
       const isHp=item.stats?.heal_pct||item.stats?.heal;
       const potKeys=isHp?['p','P']:['m','M'];
       const potKeyIdx=isHp?(Object.keys(stack).filter(k=>{const i2=stack[k].item;return i2.stats?.heal_pct||i2.stats?.heal}).indexOf(item.id||item.nm)):(Object.keys(stack).filter(k=>{const i2=stack[k].item;return i2.stats?.mana_pct||i2.stats?.mana}).indexOf(item.id||item.nm));
-      const potKey=potKeys[Math.min(potKeyIdx,potKeys.length-1)];
+      const potKey=potKeyIdx>=0?potKeys[Math.min(potKeyIdx,potKeys.length-1)]:potKeys[0];
       pb.dataset.potKey=potKey;
       const potShortcut=`<span style="position:absolute;top:3px;right:4px;font-size:.5rem;color:var(--text2);font-family:var(--fo)">[${potKey.toUpperCase()}]</span>`;
       pb.style.position='relative';
-      pb.innerHTML=`${potShortcut}<div class="skn" style="color:var(--green3)">${item.ico} ${item.nm} <span style="color:var(--gold2);font-size:.58rem">×${count}</span></div><div class="skd">${healTxt} — coûte 1 tour</div>`;
+      pb.innerHTML=`${potShortcut}<div class="skn" style="color:var(--green3)">${spriteOrIco(item.nm,item.ico,'0.9rem')} ${item.nm} <span style="color:var(--gold2);font-size:.58rem">×${count}</span></div><div class="skd">${healTxt} — coûte 1 tour</div>`;
       pb.onclick=()=>usePotionInCombat(item);sg.appendChild(pb);
     });
   }
