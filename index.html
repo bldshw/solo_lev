@@ -1290,7 +1290,11 @@ function openQuestPanel(){
 let G={};
 function newGame(){
   const _pres=getPrestige();
-  const _sf=G._startFloor||1;G={floor:_sf,dn:rnd(DNS),_prestigeBonus:_pres.bonus||0,_prestigeLevel:_pres.level||0,
+  const _sf=G._startFloor||1;
+  const _wc=G._weeklyChallenge||null;
+  const _wt=G._weeklyStartTime||null;
+  G={floor:_sf,dn:rnd(DNS),_prestigeBonus:_pres.bonus||0,_prestigeLevel:_pres.level||0,
+    _weeklyChallenge:_wc,_weeklyStartTime:_wt,
     p:{lv:1,xp:0,xpN:100,hp:-1,mhp:100,mp:-1,mmp:50,
       str:10+(getUpgradeEffect('start_str')||0),
       agi:10+(getUpgradeEffect('start_agi')||0),
