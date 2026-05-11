@@ -3607,7 +3607,15 @@ function getUpgradeEffect(effect){
   return lv;
 }
 function calcFragments(floorsCleared,normalKills,eliteKills,bossKills,goldLeft){
-  const base=floorsCleared*10;
+  const maxFloor=floorsCleared;
+  let base=0;
+  for(let f=1;f<=maxFloor;f++){
+    if(f<=10)base+=10;
+    else if(f<=30)base+=20;
+    else if(f<=60)base+=35;
+    else if(f<=90)base+=55;
+    else base+=80;
+  }
   const kills=normalKills*1+eliteKills*5+bossKills*20;
   const goldBonus=~~(goldLeft*.05);
   return base+kills+goldBonus;
