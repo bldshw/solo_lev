@@ -1180,7 +1180,7 @@ function startWeeklyRun(){
   notify(`⚡ Défi hebdomadaire lancé ! ${ch.modLabel}`,'nbad');
   stopCombatMusic();audioInit();startMusic();
   newGame();
-  setTimeout(()=>applyWeeklyMods(),200);
+  setTimeout(()=>applyWeeklyMods(),800);
 }
 function claimWeeklyReward(){
   const wd=getWeeklyChallenge();
@@ -1351,7 +1351,7 @@ function newGame(){
   document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
   document.getElementById('s-game').classList.add('on');
   renderUI();
-  if(G._weeklyChallenge)setTimeout(applyWeeklyMods,50);
+  // applyWeeklyMods est appelé depuis startWeeklyRun avec délai suffisant
   {const sf2=G._startFloor||1,mf2=getCkptData().maxFloor||0,bud=ckptBudget(sf2,mf2);
   if(bud>0)setTimeout(()=>openCkpt(sf2),500);}
   resizeCanvas();
@@ -3264,6 +3264,7 @@ function startSpecialDungeon(id){
 }
 function applyWeeklyMods(){
   const ch=G._weeklyChallenge;if(!ch||!ch.modifier)return;
+  if(!G.p){setTimeout(()=>applyWeeklyMods(),300);return;}
   const m=ch.modifier;const p=G.p;
   // Stats preset
   if(m.presetStats){p.str=m.presetStats.str||p.str;p.agi=m.presetStats.agi||p.agi;p.int=m.presetStats.int||p.int;p.vit=m.presetStats.vit||p.vit;}
@@ -3301,7 +3302,11 @@ function applyWeeklyMods(){
       if(s)G.sh.push(s);
     });
   }
+  p.mhp=pMhp();p.mmp=pMmp();
+  p.hp=p.mhp;p.mp=p.mmp;
+  if(m.hpPenalty){p.mhp=~~(p.mhp*(1-m.hpPenalty));p.hp=p.mhp;}
   renderLeft();renderRight();
+  notify(`⚡ Modificateurs appliqués — Lv${p.lv} · Étage ${G.floor}`,'nsys');
 }
 function applySpecialDungeonMods(){
   if(!G._specialDungeon)return;
