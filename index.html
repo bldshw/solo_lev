@@ -1288,6 +1288,32 @@ function openQuestPanel(){
 }
 
 let G={};
+const TIPS=[
+  '💡 Vos chances d\'extraction augmente avec votre intelligence',
+  '💡 Plus votre Intelligence est élevée, plus vous pouvez avoir d\'ombres dans votre armée.',
+  '💡 Les ombres de rang Maréchal sont extrêmement puissantes — atteignez le niveau requis pour les faire ascendre.',
+  '💡 Les sets d\'équipements offrent des bonus puissants dès 2 pièces équipées. Consultez les ◆ sur vos items.',
+  '💡 En combat, vos ombres peuvent intercepter les attaques ennemies — les tanks ont une chance élevée de le faire.',
+  '💡 La Forge permet d\'améliorer vos équipements aux stats de l\'étage actuel. Plus vous attendez, plus c\'est puissant.',
+  '💡 Les Fragments du Monarque s\'accumulent entre les runs. Investissez-les dans le Shop du Monarque.',
+  '💡 Certaines ombres spéciales ne peuvent être obtenues qu\'en battant des boss à des étages précis.',
+  '💡 Le Domaine du Monarque double les chances d\'action de vos ombres en combat, mais consomme des PM à chaque action.',
+  '💡 Les Portails Rouges sont dangereux mais offrent des récompenses supérieures. Préparez-vous avant d\'entrer.',
+  '💡 Les élixirs de stats sont rares mais permanents — utilisez-les sur vos stats principales.',
+  '💡 La branche Monarque des Ombres maximise la puissance de votre armée. Chasseur et Mage sont plus axées sur le joueur.',
+  '💡 Bellion le Grand Maréchal booste toute votre armée de 25% ATK/DEF. Il apparaît à l\'étage 90.',
+  '💡 Les synergies d\'ombres sont puissantes — mixer les rôles (tank+soigneur+guerrier) donne des bonus cumulés.',
+  '💡 Min Byung-Gu se débloque en soignant 5 000 PV en une seule run. Les potions et soins d\'ombres comptent.',
+  '💡 Appuyez sur [E] pour ouvrir l\'inventaire et [T] pour l\'arbre de compétences en exploration.',
+  '💡 Les boss des étages multiples de 10 doivent absolument être vaincus pour accéder aux escaliers les autres peuvent être évités.',
+  '💡 Le Shop du Palier au début de chaque run permet d\'acheter des ombres et équipements avec vos points accumulés.',
+  '💡 Les ombres récupèrent 25% de leurs PV entre chaque étage. Soignez-les au shop si elles sont trop blessées.',
+  '💡 Utilisez [F] pour fuir un combat difficile — votre Agilité influence vos chances de succès.',
+  '💡 Les critiques ignorent une partie de la DEF ennemie si vous avez appris Œil de Chasseur.',
+  '💡 La compétence Exécution inflige 400% ATK sur un ennemi sous 25% PV — parfaite pour les boss en fin de vie.',
+  '💡 Vendez vos équipements inutiles au Marchand pour financer de meilleures pièces.',
+  '💡 Les défis quotidiens récompensent en Fragments du Monarque — consultez-les chaque jour.',
+];
 function newGame(){
   const _pres=getPrestige();
   const _sf=G._startFloor||1;
@@ -3474,6 +3500,9 @@ function showFloorTransition(floorNum, floorName, cb){
       rEl.style.opacity='1';
       fEl.textContent=floorNum>100?`INFINI — ${floorNum}`:`ÉTAGE ${floorNum}`;
       nEl.textContent=floorName||'';
+      const tipEl=document.getElementById('ft-rune');
+      const tip=TIPS[~~(Math.random()*TIPS.length)];
+      tipEl.innerHTML=`🌑<div style="font-size:.6rem;color:var(--text2);max-width:320px;text-align:center;margin-top:8px;line-height:1.6;font-family:var(--fr)">${tip}</div>`;
       setTimeout(()=>{
         el.style.opacity='0';
         fEl.style.opacity='0';fEl.style.transform='scale(1.1)';
