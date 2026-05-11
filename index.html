@@ -1865,6 +1865,7 @@ function nextFloor(){
   if(G.floor===101)notify('🌀 Mode INFINI activé ! Les abysses n\'ont plus de fond...','nbad');
   showFloorTransition(G.floor,G.dn,null);
   notify(`Étage ${G.floor}${G.floor>100?' [INFINI]':''} — ${G.dn}`,'nsys');checkQuest('floor',G.floor);checkFloorQuests();checkWeeklyChallenge();
+  signSave(G,getFragments());
 
   {
     const d=getCkptData();
@@ -2514,6 +2515,7 @@ function endCombat(won){
       if(!skillUsed&&isBoss)checkQuest('boss_no_skill',1);
       if(G.p.hp>0&&G.p.hp/G.p.mhp<0.10)checkQuest('low_hp_win',1);
     }
+    signSave(G,getFragments());
     G.cb=null;stopCombatMusic();setTimeout(showRewards,600);
   } else {
 
@@ -3917,8 +3919,30 @@ function showScr(nm){
   }
 }
 const SK='slrogue_v2';
+function hashSave(p,floor,frags){
+  const str=JSON.stringify({
+    gold:p.gold,floor,frags,
+    str:p.str,agi:p.agi,int:p.int,vit:p.vit,
+    lv:p.lv,kills:p.kills
+  });
+  let h=0x9e3779b9;
+  for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),0x9e3779b9);h^=h>>>16;}
+  return(h>>>0).toString(36);
+}
+
+function verifySave(G,frags){
+  if(!G||!G.p)return true;
+  if(!G._sig)return true; // ancienne sauvegarde sans signature → on accepte
+  const expected=hashSave(G.p,G.floor,frags);
+  return G._sig===expected;
+}
+
+function signSave(G,frags){
+  if(!G||!G.p)return;
+  G._sig=hashSave(G.p,G.floor,frags);
+}
 function saveGame(){
-  try{localStorage.setItem(SK,JSON.stringify(G));notify('💾 Sauvegarde + téléchargement...','nsys');}catch(e){}
+  try{signSave(G,getFragments());localStorage.setItem(SK,JSON.stringify(G));notify('💾 Sauvegarde + téléchargement...','nsys');}catch(e){}
   const blob=new Blob([JSON.stringify(G,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`slrogue_etage${G.floor}_niv${G.p.lv}.json`;
@@ -3929,7 +3953,18 @@ function triggerLoad(){document.getElementById('ldinput').click();}
 function loadFile(ev){
   const f=ev.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{G=JSON.parse(e.target.result);document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('s-game').classList.add('on');renderUI();requestAnimationFrame(()=>{resizeCanvas();renderDungeon();});notify('📂 Partie chargée !','nsys');}catch{notify('Fichier invalide !','nbad');}};
+  r.onload=e=>{try{
+    const d=JSON.parse(e.target.result);
+    if(!verifySave(d,getFragments())){
+      notify('⚠ Sauvegarde corrompue ou modifiée !','nbad');
+      return;
+    }
+    G=d;
+    document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+    document.getElementById('s-game').classList.add('on');
+    renderUI();requestAnimationFrame(()=>{resizeCanvas();renderDungeon();});
+    notify('📂 Partie chargée !','nsys');
+  }catch{notify('Fichier invalide !','nbad');}};
   r.readAsText(f);ev.target.value='';
 }
 function openSKT(){
@@ -5125,7 +5160,10 @@ window.addEventListener('load',()=>{
         document.getElementById('btn-start').textContent='▶ NOUVELLE PARTIE';
         const lb=document.createElement('button');lb.className='btn-ar';lb.style.cssText='margin-top:0;background:rgba(245,158,11,.15);border-color:var(--gold2);color:var(--gold3)';
         lb.textContent=`▶ CONTINUER (Étage ${d.floor}, Niv.${d.p.lv})`;
-        lb.onclick=()=>{G=d;showScr('game');renderAll();};
+        lb.onclick=()=>{
+          if(!verifySave(d,getFragments())){notify('⚠ Sauvegarde corrompue !','nbad');return;}
+          G=d;showScr('game');renderAll();
+        };
         document.getElementById('tver').parentNode.insertBefore(lb,document.getElementById('tver'));
       }
     }
