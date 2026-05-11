@@ -1180,7 +1180,6 @@ function startWeeklyRun(){
   notify(`⚡ Défi hebdomadaire lancé ! ${ch.modLabel}`,'nbad');
   stopCombatMusic();audioInit();startMusic();
   newGame();
-  setTimeout(()=>applyWeeklyMods(),800);
 }
 function claimWeeklyReward(){
   const wd=getWeeklyChallenge();
@@ -1348,9 +1347,40 @@ function newGame(){
   const mpRed=getUpgradeEffect('mp_cost_red')||0;
   if(mpRed>0)G.p.skills.forEach(s=>{if(s.mp>0)s.mp=Math.max(0,s.mp-mpRed);});
 
-  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
-  document.getElementById('s-game').classList.add('on');
-  renderUI();
+  if(G._weeklyChallenge){
+  const m=G._weeklyChallenge.modifier;
+  if(m.presetLevel){G.p.lv=m.presetLevel;G.p.xpN=~~(100*Math.pow(1.35,G.p.lv-1));}
+  if(m.presetStats){G.p.str=m.presetStats.str;G.p.agi=m.presetStats.agi;G.p.int=m.presetStats.int;G.p.vit=m.presetStats.vit;}
+  if(m.presetBranch)G.p.branch=m.presetBranch;
+  if(m.presetSP!=null)G.p.sp=m.presetSP;
+  if(m.presetSkills&&m.presetSkills.length){
+    G.p.skills=[];
+    m.presetSkills.forEach(id=>{
+      const node=SKILL_TREE.find(n=>n.id===id);
+      if(node){G.p.skills.push({...node,cd:0});if(node.type==='passive')applyPassive(node);}
+    });
+  }
+  if(m.presetEq){
+    Object.entries(m.presetEq).forEach(([slot,itemId])=>{
+      const tmpl=ITEMS.find(i=>i.id===itemId);
+      if(tmpl)G.p.eq[slot]=scaleItem(tmpl,G._startFloor||1);
+    });
+  }
+  if(m.presetShadows&&m.presetShadows.length){
+    G.sh=[];
+    m.presetShadows.forEach(ps=>{
+      const s=_mkPresetShadow(ps.name,ps.rank,ps.lv);
+      if(s)G.sh.push(s);
+    });
+  }
+  G.p.mhp=pMhp();G.p.mmp=pMmp();
+  G.p.hp=G.p.mhp;G.p.mp=G.p.mmp;
+  if(m.hpPenalty){G.p.mhp=~~(G.p.mhp*(1-m.hpPenalty));G.p.hp=G.p.mhp;}
+  if(m.presetSP!=null)G.p.sp=m.presetSP;
+}
+document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+document.getElementById('s-game').classList.add('on');
+renderUI();
   // applyWeeklyMods est appelé depuis startWeeklyRun avec délai suffisant
   {const sf2=G._startFloor||1,mf2=getCkptData().maxFloor||0,bud=ckptBudget(sf2,mf2);
   if(bud>0)setTimeout(()=>openCkpt(sf2),500);}
