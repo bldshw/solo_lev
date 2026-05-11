@@ -1888,7 +1888,7 @@ function nextFloor(){
   const p=G.p;p.hp=p.mhp;p.mp=p.mmp;
   G.sh.forEach(s=>s.hp=s.mhp);
 
-  if(!G._inPortal&&!isCheckpointFloor(G.floor)&&Math.random()<0.08){
+  if(!G._inPortal&&!isCheckpointFloor(G.floor)&&Math.random()<0.03){
     G._portal=true;
   }
   buildMap();renderUI();
