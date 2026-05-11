@@ -2093,7 +2093,7 @@ function refreshCombat(){
     `;
   }
   const sf=document.getElementById('shfighters'),sb=document.getElementById('shbattle');
-  if(G.sh.length){sb.style.display='block';sf.innerHTML=G.sh.map(s=>`<div class="sfu${s.hp<=0?' dead':''}"><div class="sfui">${s.ico}</div><div class="sfun">${s.name}</div><div class="sfuh">${Math.max(0,s.hp)}/${s.mhp}</div><div class="sfut"><div class="sfuf" style="width:${Math.max(0,s.hp/s.mhp*100)}%"></div></div></div>`).join('');}
+  if(G.sh.length){sb.style.display='block';sf.innerHTML=G.sh.map(s=>`<div class="sfu${s.hp<=0?' dead':''}"><div class="sfui">${spriteOrIco(s.name,s.ico,'1.15rem')}</div><div class="sfun">${s.name}</div><div class="sfuh">${Math.max(0,s.hp)}/${s.mhp}</div><div class="sfut"><div class="sfuf" style="width:${Math.max(0,s.hp/s.mhp*100)}%"></div></div></div>`).join('');}
   else sb.style.display='none';
   const tb=document.getElementById('tbn');tb.textContent=G.cb.phase==='player'?'VOTRE TOUR':'TOUR ENNEMI';tb.className='tbn '+(G.cb.phase==='player'?'tbp':'tbe');
   const abox=document.getElementById('arbox');
@@ -3111,7 +3111,7 @@ function renderRight(){
     div.onclick=()=>showShadowTooltip(s);
     div.innerHTML=`
       <div class="sht">
-        <div class="shico">${s.ico}</div>
+        <div class="shico">${spriteOrIco(s.name,s.ico,'1.12rem')}</div>
         <div class="shinf">
           <div class="shnm">${s.name}${s.hp<=0?' <span style="color:var(--red3);font-size:.52rem">☠ hors combat</span>':''}</div>
           <div class="shcl" style="color:${roleCol}">${clsDisplay} ${rankBadge(s.rank||'normal')}</div>
@@ -3135,7 +3135,7 @@ function showShadowTooltip(s){
   const rankLabels={normal:'Normal',elite:'Élite',knight:'Chevalier',eknight:'Chevalier Élite',general:'Général',marshal:'Maréchal ⭐'};
   const roleColors={fighter:'var(--blue3)',tank:'var(--cyan2)',assassin:'var(--red3)',berserker:'var(--gold2)',mage:'var(--pu3)',general:'var(--gold3)',healer:'var(--green3)'};
   const col=roleColors[s.role]||'var(--text2)';
-  document.getElementById('sh-tt-ico').textContent=s.ico;
+  document.getElementById('sh-tt-ico').innerHTML=spriteOrIco(s.name,s.ico,'2rem');
   document.getElementById('sh-tt-name').textContent=s.name+(s.isMarshal?' ⭐':'');
   document.getElementById('sh-tt-cls').innerHTML=`<span style="color:${col}">${s.cls||s.role}</span> · <span style="color:var(--gold2)">${rankLabels[s.rank||'normal']||'Normal'}</span> · Lv${s.lv}`;
   const statRows=[
