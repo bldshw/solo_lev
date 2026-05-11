@@ -437,7 +437,7 @@ const DUNGEON_EVENTS=[
   {id:'bonus_heal',ico:'💚',nm:'Fontaine de Vie',prob:.15,
     fn:()=>{const h=~~(G.p.mhp*.40),mp=~~(G.p.mmp*.40);G.p.hp=Math.min(G.p.mhp,G.p.hp+h);G.p.mp=Math.min(G.p.mmp,G.p.mp+mp);trackHealed(h);notify('💚 Fontaine ! +'+h+' PV +'+mp+' PM !','nlv');renderLeft();}},
   {id:'optional_boss',ico:'👿',nm:'Portail de Boss Optionnel',prob:.08,
-    fn:()=>{if(confirm('⚠ Un boss optionnel ! Récompense ×2. Affronter ?')){const bt={...rnd(G.floor>=10?ELITE_BOSSES:BOSSES)};bt.hp=~~(bt.hp*1.8);bt.atk=~~(bt.atk*1.5);bt.xpG=~~((bt.xp||100)*2);bt.gG=bt.gold;bt.kind='boss';bt.lv=G.floor;const k='_ev_boss';G.ents[k]=bt;startCombat(bt,k);}}},
+    fn:()=>{if(confirm('⚠ Un boss optionnel ! Récompense ×2. Affronter ?')){const bt={...rnd(BOSSES)};bt.hp=~~(bt.hp*1.8);bt.atk=~~(bt.atk*1.5);bt.xpG=~~((bt.xp||100)*2);bt.gG=bt.gold;bt.kind='boss';bt.lv=G.floor;const k='_ev_boss';G.ents[k]=bt;startCombat(bt,k);}}},
   {id:'sp_reward',ico:'📚',nm:'Grimoire Ancien',prob:.07,
     fn:()=>{G.p.sp=(G.p.sp||0)+1;notify('📚 Grimoire ! +1 Point de Compétence !','nlv');renderLeft();}},
 ];
@@ -1494,9 +1494,9 @@ function buildMap(){
         _bellionMarshal:isBellion,
       };
       bPool=[sboss];
-    } else bPool=ELITE_BOSSES;
+    } else bPool=BOSSES;
   }
-  else if(G.floor%5===0)bPool=ELITE_BOSSES;  // étages x5 = boss élite
+  else if(G.floor%5===0)bPool=BOSSES;  // étages x5 = boss élite
   else bPool=BOSSES;  // tous les autres = boss classique
   const bt=bPool[~~(Math.random()*bPool.length)];
 
@@ -1885,8 +1885,8 @@ function nextFloor(){
   const floorJustCompleted=G.floor; // étage qu'on vient de terminer
   G.floor++;G.dn=rnd(DNS);
   G._portal=false;
-  const p=G.p;p.hp=Math.min(p.mhp,p.hp+~~(p.mhp*.3));p.mp=Math.min(p.mmp,p.mp+~~(p.mmp*.3));
-  G.sh.forEach(s=>s.hp=Math.min(s.mhp,~~(s.hp+s.mhp*.25)));
+  const p=G.p;p.hp=p.mhp;p.mp=p.mmp;
+  G.sh.forEach(s=>s.hp=s.mhp);
 
   if(!G._inPortal&&!isCheckpointFloor(G.floor)&&Math.random()<0.08){
     G._portal=true;
@@ -4392,7 +4392,7 @@ function buildPortalMap(){
 
   const lr=rooms[rooms.length-1];
   const bk=`${lr.cx},${lr.cy}`;
-  const bPool=ELITE_BOSSES; // portail rouge = toujours boss élite
+  const bPool=BOSSES; 
   const bt=rnd(bPool);
   const bLv=G.floor*3+randI(5,10);
   ents[bk]={kind:'boss',...bt,lv:bLv,hp:~~(bt.hp*portalSc*1.3),mhp:~~(bt.hp*portalSc*1.3),atk:~~(bt.atk*portalSc*1.2),def:~~(bt.def*portalSc),xpG:~~(bt.xp*portalSc*2),gG:[~~(bt.gold[0]*2),~~(bt.gold[1]*2)],ext:true,_portal:true};
