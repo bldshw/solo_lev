@@ -1171,14 +1171,16 @@ function startWeeklyRun(){
   if(!wd||wd.done)return;
   document.getElementById('weekly-modal').style.display='none';
   const ch=wd.challenge;
-  G._weeklyChallenge=ch;
-  G._weeklyStartTime=Date.now();
-  // Apply start floor
-  if(ch.modifier.startFloor&&ch.modifier.startFloor>1)G._startFloor=ch.modifier.startFloor;
-  else G._startFloor=1;
+  const startFloor=ch.modifier.startFloor||1;
+  G={
+    _weeklyChallenge:ch,
+    _weeklyStartTime:Date.now(),
+    _startFloor:startFloor,
+  };
   notify(`⚡ Défi hebdomadaire lancé ! ${ch.modLabel}`,'nbad');
   stopCombatMusic();audioInit();startMusic();
-  G={};newGame();
+  newGame();
+  setTimeout(()=>applyWeeklyMods(),200);
 }
 function claimWeeklyReward(){
   const wd=getWeeklyChallenge();
