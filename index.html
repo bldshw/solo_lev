@@ -1907,6 +1907,15 @@ function openChest(k){
   delete G.ents[k];notify(`📦 ${it.nm} + ${g}G !`,'ni');
   renderDungeon();renderLeft();
 }
+function triggerDungeonEvent(){
+  const pool=DUNGEON_EVENTS.filter(e=>Math.random()<e.prob);
+  if(!pool.length)return;
+  const ev=rnd(pool);
+  notify(`${ev.ico} ${ev.nm} !`,'nsys');
+  G.p._eventsFound=(G.p._eventsFound||0)+1;
+  checkQuest('_eventsFound',G.p._eventsFound);
+  try{ev.fn();}catch(e){console.warn('Event error:',e);}
+}
 function nextFloor(){
   const floorJustCompleted=G.floor; // étage qu'on vient de terminer
   G.floor++;G.dn=rnd(DNS);
@@ -3868,9 +3877,8 @@ function showGO(){
 function checkLegacyReady(){
   const shSlots=getUpgradeEffect('sh_keep');
   const eqKeep2=getUpgradeEffect('eq_keep');
-  const eqUnlocked=legacyEqUnlocked(leg.totalFloors);
   const shOk=shSlots===0||G.sh.length===0||G_legacy.selectedSh!==null;
-  const eqOk=!eqUnlocked||Object.values(G.p.eq).filter(Boolean).length===0||G_legacy.selectedEq!==null;
+  const eqOk=eqKeep2===0||Object.values(G.p.eq).filter(Boolean).length===0||G_legacy.selectedEq!==null;
   document.getElementById('legacy-confirm-btn').disabled=!(shOk&&eqOk);
 }
 
