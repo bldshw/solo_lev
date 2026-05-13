@@ -1355,8 +1355,8 @@ function newGame(){
   buildMap();
 
   G.p.mhp=pMhp();G.p.mmp=pMmp();
-  if(G.p.hp<0)G.p.hp=G.p.mhp;
-  if(G.p.mp<0)G.p.mp=G.p.mmp;
+  G.p.hp=G.p.mhp;
+  G.p.mp=G.p.mmp;
 
   const startHPots=getUpgradeEffect('start_hp_pots')||0;
   const startMPots=getUpgradeEffect('start_mp_pots')||0;
@@ -3517,7 +3517,7 @@ function showFloorTransition(floorNum, floorName, cb){
           rEl.style.transition='all .4s ease .2s';
           if(cb)cb();
         },350);
-      },2300);
+      },2000);
     },50);
   });
 }
@@ -4247,7 +4247,8 @@ function applyCkptCart(){
     }
   });
   G.p.mhp=pMhp();G.p.mmp=pMmp();
-  G.p.hp=Math.min(G.p.mhp,G.p.hp);G.p.mp=Math.min(G.p.mmp,G.p.mp);
+  G.p.hp=G.p.mhp;
+  G.p.mp=G.p.mmp;
   renderUI();
 }
 
