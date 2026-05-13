@@ -3502,7 +3502,7 @@ function showFloorTransition(floorNum, floorName, cb){
       nEl.textContent=floorName||'';
       const tipEl=document.getElementById('ft-rune');
       const tip=TIPS[~~(Math.random()*TIPS.length)];
-      tipEl.innerHTML=`🌑<div style="font-size:.6rem;color:var(--text2);max-width:320px;text-align:center;margin-top:8px;line-height:1.6;font-family:var(--fr)">${tip}</div>`;
+      tipEl.innerHTML=`🌑<div style="font-size:.78rem;color:var(--text2);max-width:320px;text-align:center;margin-top:8px;line-height:1.6;font-family:var(--fr)">${tip}</div>`;
       setTimeout(()=>{
         el.style.opacity='0';
         fEl.style.opacity='0';fEl.style.transform='scale(1.1)';
