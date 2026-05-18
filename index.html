@@ -2587,6 +2587,8 @@ function endCombat(won){
       if(G.p.hp>0&&G.p.hp/G.p.mhp<0.10)checkQuest('low_hp_win',1);
     }
     signSave(G,getFragments());
+    const _xpEnt=e;
+    G.sh.filter(s=>s.hp>0).forEach(s=>shXP(s,xpFromEnemy(_xpEnt)));
     G.cb=null;stopCombatMusic();setTimeout(showRewards,600);
   } else {
 
@@ -2820,13 +2822,12 @@ function mkShadow(enemy){
   return shObj;
 }
 const SHADOW_RANKS=[
-
-  {id:'normal',   label:'Ombre',         ascendAt:10,  flatXpN:33,  growthMult:1.0,  color:'var(--text3)'},
-  {id:'elite',    label:'Élite',          ascendAt:15,  flatXpN:109, growthMult:1.35, color:'var(--blue3)'},
-  {id:'knight',   label:'Chevalier',      ascendAt:25,  flatXpN:179, growthMult:1.75, color:'var(--gold2)'},
-  {id:'eknight',  label:'Chev. d\'Élite', ascendAt:50,  flatXpN:330, growthMult:2.2,  color:'var(--pu3)'},
-  {id:'general',  label:'Général',        ascendAt:100, flatXpN:851, growthMult:3.0,  color:'var(--gold3)'},
-  {id:'marshal',  label:'Maréchal',       ascendAt:null,flatXpN:0,   growthMult:4.0,  color:'var(--red3)'},
+  {id:'normal',   label:'Ombre',         ascendAt:280,  flatXpN:30,  growthMult:1.0,  color:'var(--text3)'},
+  {id:'elite',    label:'Élite',          ascendAt:630,  flatXpN:50,  growthMult:1.35, color:'var(--blue3)'},
+  {id:'knight',   label:'Chevalier',      ascendAt:1050, flatXpN:55,  growthMult:1.75, color:'var(--gold2)'},
+  {id:'eknight',  label:'Chev. d\'Élite', ascendAt:2100, flatXpN:80,  growthMult:2.2,  color:'var(--pu3)'},
+  {id:'general',  label:'Général',        ascendAt:5250, flatXpN:200, growthMult:3.0,  color:'var(--gold3)'},
+  {id:'marshal',  label:'Maréchal',       ascendAt:null, flatXpN:0,   growthMult:4.0,  color:'var(--red3)'},
 ];
 const RANK_XP_FRACTIONS={normal:1.000,elite:0.997,knight:0.982,eknight:0.940,general:0.788,marshal:0};
 const FULL_JOURNEY_XP=108038;
@@ -2854,7 +2855,9 @@ function shadowRankLabel(s){return shadowRankDef(s).label;}
 function shadowRankColor(s){return shadowRankDef(s).color;}
 function canAscend(s){
   const rd=shadowRankDef(s);
-  return rd.ascendAt!==null&&s.lv>=rd.ascendAt;
+  if(rd.ascendAt===null)return false;
+  const totalXp=(s.totalXp||0);
+  return totalXp>=rd.ascendAt;
 }
 function ascendAll(){
   const eligible=G.sh.filter(s=>canAscend(s));
@@ -2896,19 +2899,27 @@ function ascendShadow(s){
   renderRight();
   return true;
 }
-
+function xpFromEnemy(ent){
+  if(!ent)return 5;
+  if(ent.kind==='boss'){
+    const isMonarch=ent.name&&(ent.name.includes('Monarque')||ent.name.includes('Tarnak')||ent.name.includes('Legia')||ent.name.includes('Antares')||ent.name.includes('Sillad')||ent.name.includes('Baran'));
+    if(isMonarch)return 200;
+    return 80;
+  }
+  if(ent.type==='elite')return 30;
+  return 10;
+}
 function shXP(s,rawXP){
   if(s._marshalLocked)return;
-
-  const effectiveXP=rawXP*(s._xpMult||1);
+  if(s.hp<=0)return;
+  const effectiveXP=rawXP;
   s.xp+=effectiveXP;
+  s.totalXp=(s.totalXp||0)+effectiveXP;
   const rd=shadowRankDef(s);
   const gm=rd.growthMult;
   while(s.xp>=s.xpN){
-
     const rd2=shadowRankDef(s);
-    if(rd2.ascendAt!==null&&s.lv>=rd2.ascendAt){
-
+    if(canAscend(s)){
       break;
     }
     s.xp-=s.xpN;s.lv++;
