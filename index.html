@@ -2244,8 +2244,8 @@ function usePotionInCombat(item){
   if(idx===-1){notify('Potion introuvable !','nbad');return;}
 
   const cs=item.stats||{};
-  if(cs.heal_pct){const h=Math.max(cs.heal_min||0,~~(p.mhp*cs.heal_pct));p.hp=Math.min(p.mhp,p.hp+h);clog(`🧪 ${item.nm} — +${h} PV !`,'cll');}
-  else if(cs.heal){p.hp=Math.min(p.mhp,p.hp+cs.heal);clog(`🧪 ${item.nm} — +${cs.heal} PV !`,'cll');}
+  if(cs.heal_pct){const h=Math.max(cs.heal_min||0,~~(p.mhp*cs.heal_pct));p.hp=Math.min(p.mhp,p.hp+h);trackHealed(h);clog(`🧪 ${item.nm} — +${h} PV !`,'cll');}
+  else if(cs.heal){p.hp=Math.min(p.mhp,p.hp+cs.heal);trackHealed(cs.heal);clog(`🧪 ${item.nm} — +${cs.heal} PV !`,'cll');}
   if(cs.mana_pct){const m=Math.max(cs.mana_min||0,~~(p.mmp*cs.mana_pct));p.mp=Math.min(p.mmp,p.mp+m);clog(`💧 ${item.nm} — +${m} PM !`,'cll');}
   else if(cs.mana){p.mp=Math.min(p.mmp,p.mp+cs.mana);clog(`💧 ${item.nm} — +${cs.mana} PM !`,'cll');}
   if(cs.str_perm){p.str+=cs.str_perm;clog(`⚗️ Force +${cs.str_perm} permanent !`,'cll');}
@@ -4831,8 +4831,8 @@ function doUnequip(slot,item){
 function useConsumable(idx){
   const p=G.p;const item=p.inv[idx];if(!item)return;
   const s=item.stats||{};
-  if(s.heal_pct){const h=Math.max(s.heal_min||0,~~(p.mhp*s.heal_pct));p.hp=Math.min(p.mhp,p.hp+h);notify(`🧪 ${item.nm} — +${h} PV`,'nsys');}
-  else if(s.heal){p.hp=Math.min(p.mhp,p.hp+s.heal);notify(`🧪 +${s.heal} PV`,'nsys');}
+  if(s.heal_pct){const h=Math.max(s.heal_min||0,~~(p.mhp*s.heal_pct));p.hp=Math.min(p.mhp,p.hp+h);trackHealed(h);notify(`🧪 ${item.nm} — +${h} PV`,'nsys');}
+  else if(s.heal){p.hp=Math.min(p.mhp,p.hp+s.heal);trackHealed(s.heal);notify(`🧪 +${s.heal} PV`,'nsys');}
   if(s.mana_pct){const m=Math.max(s.mana_min||0,~~(p.mmp*s.mana_pct));p.mp=Math.min(p.mmp,p.mp+m);notify(`💧 ${item.nm} — +${m} PM`,'nsys');}
   else if(s.mana){p.mp=Math.min(p.mmp,p.mp+s.mana);notify(`💧 +${s.mana} PM`,'nsys');}
   if(s.str_perm){p.str+=s.str_perm;notify(`⚗️ Force +${s.str_perm} permanent !`,'nlv');}
