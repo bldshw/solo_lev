@@ -2298,12 +2298,12 @@ function doSkill(sk){
   const atk=pAtk(),edef=e.weakened?~~(e.def*.5):e.def;let dmg=0;
   if(sk.type==='aoe_shadow'){
 
-    let stot=0;G.sh.filter(s=>s.hp>0).forEach(s=>{const d=Math.max(1,s.atk-edef);e.hp-=d;stot+=d;shXP(s,~~(d/5));});
+    let stot=0;G.sh.filter(s=>s.hp>0).forEach(s=>{const d=Math.max(1,s.atk-edef);e.hp-=d;stot+=d;});
     clog(`👥 Frappe des Ombres — ${stot} dégâts totaux !`,'clp');
     if(e.hp<=0){endCombat(true);return;}endPT();return;
   } else if(sk.type==='aoe'){
     dmg=Math.max(1,~~(atk*sk.mult)-edef);e.hp-=dmg;
-    let ex='';G.sh.filter(s=>s.hp>0).forEach(s=>{const sd=Math.max(1,~~(s.atk*.6)-edef);e.hp-=sd;ex+=` +${s.name}:${sd}`;shXP(s,~~(sd/5));});
+    let ex='';G.sh.filter(s=>s.hp>0).forEach(s=>{const sd=Math.max(1,~~(s.atk*.6)-edef);e.hp-=sd;ex+=` +${s.name}:${sd}`;});
     clog(`${sk.ico} ${sk.nm} — ${dmg}${ex}`,'clp');
   } else if(sk.type==='shadow'){
     dmg=Math.max(1,~~(atk*sk.mult)-edef);e.hp-=dmg;G.cb.dodge=true;
@@ -2342,7 +2342,7 @@ function shadowAttackCalc(e){
     let d=Math.max(1,~~(baseAtk)-edef);
     if(s.critChance&&Math.random()<s.critChance*dimFactor){d=~~(d*1.8);clog(`⚡ ${s.name} Critique!`,'cls');}
     if(s.role==='mage'&&s.passive&&s.passive.includes('Nova')&&Math.random()<.20*dimFactor){d=~~(d*1.6);clog(`💜 Nova!`,'cls');}
-    e.hp-=d;tot+=d;shXP(s,~~(d/5));s._dmgDone=(s._dmgDone||0)+d;clog(`💜 ${s.name}: ${d}`,`cls`);
+    e.hp-=d;tot+=d;s._dmgDone=(s._dmgDone||0)+d;clog(`💜 ${s.name}: ${d}`,`cls`);
   });
   return tot;
 }
@@ -2361,7 +2361,7 @@ function shadowProbPlayerTurn(e){
     const {atkMult:synAtkM,healPct:synHealPct}=computeShadowSynergies();
     if(FIGHTER_ROLES.includes(s.role)&&Math.random()<fightChance){
       const d=Math.max(1,~~(s.atk*synAtkM)-edef);
-      e.hp-=d;extraDmg+=d;shXP(s,~~(d/5));
+      e.hp-=d;extraDmg+=d;
       msgs.push(`${s.ico}${isMarshal?'⭐':''} ${s.name} saisit l\'ouverture ! (${d})`);
     }
     if(s.role==='healer'&&Math.random()<healChance){
