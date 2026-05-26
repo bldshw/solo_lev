@@ -2142,6 +2142,42 @@ function refreshCombat(){
   document.getElementById('sksbr').innerHTML='<div class="sksbr">'+p.skills.map(sk=>`<div class="sksrow">${sk.ico} ${sk.nm}${sk.cd>0?` <span style="color:var(--gold2)">(${sk.cd})</span>`:' <span style="color:var(--green3);font-size:.58rem">✓</span>'}</div>`).join('')+'</div>';
   renderSkills();
 }
+function useBestPotion(type){
+  if(!G.cb||G.cb.phase!=='player')return;
+  const p=G.p;
+  const isHp=type==='hp';
+  const current=isHp?p.hp:p.mp;
+  const max=isHp?p.mhp:p.mmp;
+  const missing=max-current;
+  if(missing<=0){clog(`${isHp?'PV':'PM'} déjà au maximum !`,'clsys');return;}
+
+  // Récupère toutes les potions du bon type
+  const pots=p.inv.filter(it=>{
+    if(it.type!=='consumable')return false;
+    if(isHp)return it.stats?.heal_pct||it.stats?.heal;
+    return it.stats?.mana_pct||it.stats?.mana;
+  });
+  if(!pots.length){clog(`Aucune ${isHp?'potion de vie':'potion de mana'} disponible !`,'clsys');return;}
+
+  // Calcule la quantité soignée pour chaque potion
+  function healAmount(it){
+    if(isHp){
+      if(it.stats?.heal_pct)return Math.max(it.stats.heal_min||0,~~(p.mhp*it.stats.heal_pct));
+      return it.stats?.heal||0;
+    } else {
+      if(it.stats?.mana_pct)return Math.max(it.stats.mana_min||0,~~(p.mmp*it.stats.mana_pct));
+      return it.stats?.mana||0;
+    }
+  }
+
+  // Trouve la potion la plus adaptée :
+  // 1. Préfère celle qui soigne exactement ou légèrement au-dessus du manque
+  // 2. Sinon prend la plus grande
+  const sorted=[...pots].sort((a,b)=>healAmount(a)-healAmount(b));
+  const best=sorted.find(it=>healAmount(it)>=missing)||sorted[sorted.length-1];
+
+  usePotionInCombat(best);
+}
 function renderSkills(){
   const p=G.p,sg=document.getElementById('skgrid');sg.innerHTML='';
   const can=G.cb&&G.cb.phase==='player';
@@ -5255,10 +5291,14 @@ window.addEventListener('keydown',e=>{
     }
     const key=e.key.toLowerCase();
     if(key==='f'){e.preventDefault();tryFlee();return;}
-    if(key==='p'||key==='m'){
+    if(key==='p'){
       e.preventDefault();
-      const btn=document.querySelector(`#skgrid button[data-pot-key="${key}"]`);
-      if(btn&&!btn.disabled)btn.click();
+      useBestPotion('hp');
+      return;
+    }
+    if(key==='m'){
+      e.preventDefault();
+      useBestPotion('mp');
       return;
     }
   }
