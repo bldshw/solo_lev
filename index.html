@@ -2293,7 +2293,9 @@ function estimateSkillDmg(sk){
 function doSkill(sk){
   if(!G.cb||G.cb.phase!=='player')return;
   const p=G.p,e=G.cb.ent;if(p.mp<sk.mp){clog('Pas assez de PM !','clsys');return;}
-  p.mp-=sk.mp;sk.cd=sk.cdm;
+  const domainCost=((G.p.skills||[]).find(s=>s.id==='domain')&&sk.id!=='domain')?2:0;
+  if(p.mp<sk.mp+domainCost){clog('Pas assez de PM !','clsys');return;}
+  p.mp-=sk.mp+domainCost;sk.cd=sk.cdm;
   if(sk.id!=='basic')G.p._combatSkillUsed=true;
   const atk=pAtk(),edef=e.weakened?~~(e.def*.5):e.def;let dmg=0;
   if(sk.type==='aoe_shadow'){
@@ -2740,9 +2742,10 @@ function scaleItem(tmpl,floor){
   let isPrimary=true;
   for(const[k,v] of Object.entries(base)){
     if(k==='heal_pct'||k==='mana_pct'||k==='heal_min'||k==='mana_min'){scaledStats[k]=v;continue;}
+    const rarBoost={common:1.0,rare:1.3,epic:1.7,legendary:2.4}[tmpl.r||'common']||1.0;
     const raw=isPrimary
-      ? Math.max(1,~~(iLv*variance()))
-      : Math.max(1,~~(iLv*(0.55+Math.random()*.10)));
+      ? Math.max(1,~~(iLv*variance()*rarBoost))
+      : Math.max(1,~~(iLv*(0.55+Math.random()*.10)*rarBoost));
     scaledStats[k]=raw;
     isPrimary=false;
   }
@@ -2751,7 +2754,7 @@ function scaleItem(tmpl,floor){
   delete result.baseStats;
   return result;
 }
-function giveXP(a){const p=G.p;p.xp+=a;while(p.xp>=p.xpN){p.xp-=p.xpN;lvUp();}renderLeft();}
+function giveXP(a){const p=G.p;p.xp+=~~(a*1.10);while(p.xp>=p.xpN){p.xp-=p.xpN;lvUp();}renderLeft();}
 function lvUp(){
   const p=G.p;p.lv++;p.sp+=5;p.xpN=~~(p.xpN*1.45);
 
@@ -2822,12 +2825,12 @@ function mkShadow(enemy){
   return shObj;
 }
 const SHADOW_RANKS=[
-  {id:'normal',   label:'Ombre',         ascendAt:280,  flatXpN:30,  growthMult:1.0,  color:'var(--text3)'},
-  {id:'elite',    label:'Élite',          ascendAt:630,  flatXpN:50,  growthMult:1.35, color:'var(--blue3)'},
-  {id:'knight',   label:'Chevalier',      ascendAt:1050, flatXpN:55,  growthMult:1.75, color:'var(--gold2)'},
-  {id:'eknight',  label:'Chev. d\'Élite', ascendAt:2100, flatXpN:80,  growthMult:2.2,  color:'var(--pu3)'},
-  {id:'general',  label:'Général',        ascendAt:5250, flatXpN:200, growthMult:3.0,  color:'var(--gold3)'},
-  {id:'marshal',  label:'Maréchal',       ascendAt:null, flatXpN:0,   growthMult:4.0,  color:'var(--red3)'},
+  {id:'normal',   label:'Ombre',         ascendAt:10,  xpPerLv:15,  growthMult:1.0,  color:'var(--text3)'},
+  {id:'elite',    label:'Élite',          ascendAt:25,  xpPerLv:25,  growthMult:1.35, color:'var(--blue3)'},
+  {id:'knight',   label:'Chevalier',      ascendAt:50,  xpPerLv:40,  growthMult:1.75, color:'var(--gold2)'},
+  {id:'eknight',  label:'Chev. d\'Élite', ascendAt:75,  xpPerLv:70,  growthMult:2.2,  color:'var(--pu3)'},
+  {id:'general',  label:'Général',        ascendAt:100, xpPerLv:120, growthMult:3.0,  color:'var(--gold3)'},
+  {id:'marshal',  label:'Maréchal',       ascendAt:null,xpPerLv:0,   growthMult:4.0,  color:'var(--red3)'},
 ];
 const RANK_XP_FRACTIONS={normal:1.000,elite:0.997,knight:0.982,eknight:0.940,general:0.788,marshal:0};
 const FULL_JOURNEY_XP=108038;
@@ -2856,8 +2859,7 @@ function shadowRankColor(s){return shadowRankDef(s).color;}
 function canAscend(s){
   const rd=shadowRankDef(s);
   if(rd.ascendAt===null)return false;
-  const totalXp=(s.totalXp||0);
-  return totalXp>=rd.ascendAt;
+  return s.lv>=rd.ascendAt;
 }
 function ascendAll(){
   const eligible=G.sh.filter(s=>canAscend(s));
@@ -2871,21 +2873,16 @@ function ascendShadow(s){
   if(curIdx>=SHADOW_RANKS.length-1)return false;
   const nextRank=SHADOW_RANKS[curIdx+1];
   if(nextRank.id==='marshal'){
-
     s.atk=~~(s.atk*2.5);s.def=~~(s.def*2.5);s.mhp=~~(s.mhp*2.5);s.hp=s.mhp;
     s.rank='marshal';s._marshalLocked=true;
-    // Visual evolution for marshal
     const evoM=SHADOW_EVOLUTIONS[s.name.split(' ')[0]]?.marshal;
     if(evoM){s.ico=evoM.ico;s.name=evoM.name;if(evoM.passive)s.passive=evoM.passive;}
     notify(`🌟 ${s.name} est devenu MARÉCHAL des Ombres !`,'nlv');
   } else {
 
-    const excessXp=s.xp;
-    s.lv=1;s.xp=excessXp;
+    s.xp=0;
+    s.lv=1;
     s.rank=nextRank.id;
-    s.xpN=nextRank.flatXpN||240;
-
-    s._xpMult=computeXpMult(nextRank.id,G.floor||s.capturedFloor||1);
     sfxAscend();
     // Visual evolution check
     const evo=SHADOW_EVOLUTIONS[s.name.split(' ')[0]]?.[nextRank.id];
@@ -2912,26 +2909,21 @@ function xpFromEnemy(ent){
 function shXP(s,rawXP){
   if(s._marshalLocked)return;
   if(s.hp<=0)return;
-  const effectiveXP=rawXP;
-  s.xp+=effectiveXP;
-  s.totalXp=(s.totalXp||0)+effectiveXP;
+  s.xp+=rawXP;
+  s.totalXp=(s.totalXp||0)+rawXP;
   const rd=shadowRankDef(s);
   const gm=rd.growthMult;
-  while(s.xp>=s.xpN){
-    const rd2=shadowRankDef(s);
-    if(canAscend(s)){
-      break;
-    }
-    s.xp-=s.xpN;s.lv++;
+  const xpPerLv=rd.xpPerLv||15;
+  while(s.xp>=xpPerLv){
+    if(canAscend(s))break;
+    s.xp-=xpPerLv;s.lv++;
     const hpGain=0.10*gm;
     const atkGain=0.08*gm;
     const defGain=0.06*gm;
     s.mhp=~~(s.mhp*(1+hpGain));s.hp=Math.min(s.mhp,s.hp+~~(s.mhp*.3));
     s.atk=~~(s.atk*(1+atkGain));s.def=~~(s.def*(1+defGain));
     notify(`👥 ${s.name} (${shadowRankLabel(s)}) Lv${s.lv} ! ATK:${s.atk} PV:${s.mhp}`,'nsh');
-    if(canAscend(s)){
-      renderRight();
-    }
+    if(canAscend(s))renderRight();
   }
 }
 function rollItem(){return rollItemAtFloor(G.floor);}
@@ -4211,7 +4203,7 @@ function renderCkpt(){
     const grid=document.createElement('div');grid.className='ckpt-grid';el.appendChild(grid);
     items.forEach(item=>{
       const qty=G_ckpt.cart[item.id]||0;
-      const maxed=qty>=item.maxQty;
+      const maxed=false;
       const canAfford=G_ckpt.remaining>=item.cost;
       const div=document.createElement('div');div.className='ckpt-item'+(maxed?' bought':'');
       const isLocked=item.locked===true;
@@ -4521,21 +4513,46 @@ let G_invSort='rarity'; // 'rarity'|'type'|'atk'|'def'|'str'|'agi'|'int'
 function autoEquip(){
   if(!G||!G.p)return;
   const p=G.p;
-  const primary=effStr()>=effAgi()&&effStr()>=effInt()?'str':effAgi()>=effInt()?'agi':'int';
-  const statPriority=primary==='str'?['atk','str','def','vit']:primary==='agi'?['agi','atk','def','vit']:['int','atk','def','vit'];
-  function itemScore(item){
-    const s=item.stats||{};
-    return statPriority.reduce((t,k,i)=>(s[k]||0)*(4-i)+t,0);
-  }
   const slots=['weapon','armor','helmet','boots','ring','necklace'];
   let equipped=0;
+
+  // Score d'un item seul (sans set)
+  function itemBaseScore(item){
+    const s=item.stats||{};
+    return (s.str||0)*3+(s.agi||0)*3+(s.int||0)*3+(s.vit||0)*3
+          +(s.atk||0)*1.5+(s.def||0)*1.5
+          +(s.hp||0)*0.1+(s.mp||0)*0.1;
+  }
+
+  // Score de set bonus si on équipe cet item
+  function setBonus2(item){
+    if(!item.id)return 0;
+    let bonus=0;
+    Object.values(SETS).forEach(set=>{
+      if(!set.pieces.includes(item.id))return;
+      // Combien de pièces du set sont déjà équipées (hors slot de cet item)
+      const currentCount=set.pieces.filter(pid=>{
+        return Object.entries(p.eq).some(([sl,eq])=>eq&&eq.id===pid&&sl!==item.slot);
+      }).length;
+      // Si équiper cet item active un bonus de set
+      if(currentCount>=1&&set.bonus2)bonus+=50;
+      if(currentCount>=2&&set.bonus3)bonus+=80;
+      if(currentCount>=3&&set.bonus4)bonus+=120;
+    });
+    return bonus;
+  }
+
+  function totalScore(item){
+    return itemBaseScore(item)+setBonus2(item);
+  }
+
   slots.forEach(slot=>{
     const candidates=[...p.inv.filter(it=>it.slot===slot&&it.type!=='consumable'&&meetsReq(it))];
     if(!candidates.length)return;
-    const best=candidates.reduce((a,b)=>itemScore(a)>=itemScore(b)?a:b);
+    const best=candidates.reduce((a,b)=>totalScore(a)>=totalScore(b)?a:b);
     const cur=p.eq[slot];
-    if(!cur||itemScore(best)>itemScore(cur)){
-      if(cur){p.inv.push({...cur});}
+    if(!cur||totalScore(best)>totalScore(cur)){
+      if(cur)p.inv.push({...cur});
       p.eq[slot]={...best};
       p.inv.splice(p.inv.findIndex(i=>i===best),1);
       equipped++;
@@ -5233,7 +5250,7 @@ window.addEventListener('keydown',e=>{
     if(skillIdx>=0){
       e.preventDefault();
       const sk=(G.p.skills||[])[skillIdx];
-      if(sk)doSkill(sk);
+      if(sk&&sk.cd===0)doSkill(sk);
       return;
     }
     const key=e.key.toLowerCase();
