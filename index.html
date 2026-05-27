@@ -27,6 +27,8 @@
   <button class="btn-ar" style="margin-top:0;background:rgba(245,158,11,.1);border-color:var(--gold);color:var(--gold3);padding:8px 28px;font-size:.78rem" onclick="openAchievements()">🏅 TROPHÉES</button>
   <button class="btn-ar" style="margin-top:0;background:rgba(239,68,68,.1);border-color:var(--red2);color:var(--red3);padding:8px 28px;font-size:.78rem" onclick="openWeeklyChallenge()">⚡ DÉFI HEBDOMADAIRE</button>
   <button class="btn-ar" id="special-dungeon-btn" style="display:none;margin-top:0;background:rgba(239,68,68,.1);border-color:var(--red2);color:var(--red3);padding:8px 28px;font-size:.78rem" onclick="openSpecialDungeons()">🏰 DONJONS SPÉCIAUX</button>
+  <button class="btn-ar" style="margin-top:0;background:rgba(6,182,212,.1);border-color:var(--cyan2);color:var(--cyan2);padding:8px 28px;font-size:.78rem" onclick="exportProgress()">💾 SAUVEGARDER PROGRESSION</button>
+  <label class="btn-ar" style="margin-top:0;background:rgba(6,182,212,.1);border-color:var(--cyan2);color:var(--cyan2);padding:8px 28px;font-size:.78rem;cursor:pointer">📂 CHARGER PROGRESSION<input type="file" accept=".json" style="display:none" onchange="importProgress(event)"></label>
   <button class="btn-ar" id="prestige-title-btn" style="margin-top:0;display:none;background:rgba(245,158,11,.15);border-color:var(--gold2);color:var(--gold3);padding:8px 28px;font-size:.78rem" onclick="openPrestige()">👑 PRESTIGE</button>
 </div>
 
@@ -3676,7 +3678,9 @@ function savePrestige(d){try{localStorage.setItem('slm_prestige',JSON.stringify(
 const PRESTIGE_COLORS=['','var(--gold3)','var(--red3)','var(--pu3)','var(--cyan2)','#ff6ef7'];
 const PRESTIGE_NAMES=['','Renaissant','Transcendant','Souverain','Monarque','ARISE'];
 function getFragments(){try{return parseInt(localStorage.getItem(FRAG_KEY))||0;}catch{return 0;}}
-function setFragments(n){try{localStorage.setItem(FRAG_KEY,n);}catch{}}
+function setFragments(n){
+  try{localStorage.setItem(FRAG_KEY,n);saveFullProgress();}catch{}
+}
 function getUpgrades(){try{return JSON.parse(localStorage.getItem(UPGR_KEY))||{};}catch{return{};}}
 function saveUpgrades(obj){try{localStorage.setItem(UPGR_KEY,JSON.stringify(obj));}catch{}}
 function getUpgradeLevel(id){return getUpgrades()[id]||0;}
@@ -4072,9 +4076,74 @@ function signSave(G,frags){
   if(!G||!G.p)return;
   G._sig=hashSave(G.p,G.floor,frags);
 }
+function saveFullProgress(){
+  try{
+    const data={
+      fragments:getFragments(),
+      upgrades:getUpgrades(),
+      ckpt:getCkptData(),
+      gstats:getGlobalStats(),
+      achiev:getUnlockedAchievements(),
+      prestige:getPrestige(),
+      legacy:getLegacy(),
+      history:JSON.parse(localStorage.getItem('slm_history')||'[]'),
+      daily:JSON.parse(localStorage.getItem('slm_daily')||'null'),
+      weekly:JSON.parse(localStorage.getItem('slm_weekly')||'null'),
+      version:2,
+      date:Date.now(),
+    };
+    localStorage.setItem('slm_fullsave',JSON.stringify(data));
+    return data;
+  }catch(e){console.warn('saveFullProgress error:',e);}
+}
+
+function loadFullProgress(data){
+  try{
+    if(!data||data.version!==2)return false;
+    if(data.fragments!=null)setFragments(data.fragments);
+    if(data.upgrades)saveUpgrades(data.upgrades);
+    if(data.ckpt)saveCkptData(data.ckpt);
+    if(data.gstats)saveGlobalStats(data.gstats);
+    if(data.achiev)localStorage.setItem('slm_achiev',JSON.stringify(data.achiev));
+    if(data.prestige)savePrestige(data.prestige);
+    if(data.legacy)saveLegacy(data.legacy);
+    if(data.history)localStorage.setItem('slm_history',JSON.stringify(data.history));
+    if(data.daily)localStorage.setItem('slm_daily',JSON.stringify(data.daily));
+    if(data.weekly)localStorage.setItem('slm_weekly',JSON.stringify(data.weekly));
+    return true;
+  }catch(e){console.warn('loadFullProgress error:',e);return false;}
+}
+function exportProgress(){
+  saveFullProgress();
+  const data=saveFullProgress();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`slm_progression_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  notify('💾 Progression exportée !','nsys');
+}
+
+function importProgress(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{try{
+    const data=JSON.parse(e.target.result);
+    if(loadFullProgress(data)){
+      updateFragDisplay();updatePrestigeBadge();
+      notify('📂 Progression importée !','nsys');
+    } else {
+      notify('⚠ Fichier de progression invalide !','nbad');
+    }
+  }catch{notify('Fichier invalide !','nbad');}};
+  r.readAsText(f);ev.target.value='';
+}
 function saveGame(){
-  try{signSave(G,getFragments());localStorage.setItem(SK,JSON.stringify(G));notify('💾 Sauvegarde + téléchargement...','nsys');}catch(e){}
-  const blob=new Blob([JSON.stringify(G,null,2)],{type:'application/json'});
+  saveFullProgress();
+  try{localStorage.setItem(SK,JSON.stringify(G));notify('💾 Sauvegarde + téléchargement...','nsys');}catch(e){}
+  const fullData={game:G,progress:saveFullProgress()};
+  const blob=new Blob([JSON.stringify(fullData,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`slrogue_etage${G.floor}_niv${G.p.lv}.json`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -4085,15 +4154,25 @@ function loadFile(ev){
   const f=ev.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=e=>{try{
-    const d=JSON.parse(e.target.result);
-    if(!verifySave(d,getFragments())){
-      notify('⚠ Sauvegarde corrompue ou modifiée !','nbad');
-      return;
+    const raw=JSON.parse(e.target.result);
+    // Nouveau format avec progression intégrée
+    if(raw.game&&raw.progress){
+      if(!verifySave(raw.game,raw.progress.fragments||getFragments())){
+        notify('⚠ Sauvegarde corrompue ou modifiée !','nbad');return;
+      }
+      loadFullProgress(raw.progress);
+      G=raw.game;
+    } else {
+      // Ancien format — compatibilité
+      if(!verifySave(raw,getFragments())){
+        notify('⚠ Sauvegarde corrompue ou modifiée !','nbad');return;
+      }
+      G=raw;
     }
-    G=d;
     document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
     document.getElementById('s-game').classList.add('on');
     renderUI();requestAnimationFrame(()=>{resizeCanvas();renderDungeon();});
+    updateFragDisplay();updatePrestigeBadge();
     notify('📂 Partie chargée !','nsys');
   }catch{notify('Fichier invalide !','nbad');}};
   r.readAsText(f);ev.target.value='';
