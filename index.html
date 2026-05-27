@@ -1444,7 +1444,7 @@ function buildMap(){
   const ents={};
   const _sdMod=G._specialDungeon?.modifiers||{};
   const sc=(isFloor1?0.55:Math.max(0.8,0.5+G.floor*0.35))*(_sdMod.sc||1);
-  const eliteChanceBase=isFloor1?0:Math.min(0.80,(_sdMod.eliteChance||0)+(0.10+(G.floor-1)*0.025));
+  const eliteChanceBase=isFloor1?0:G.floor<20?0:Math.min(0.80,(_sdMod.eliteChance||0)+(0.10+(G.floor-20)*0.025));
   const nm=isFloor1?5:Math.max(4,~~((G.floor*(2.0+floorTier*0.25))*(_sdMod.nm_mult||1))+~~(Math.random()*(4+floorTier)));
   for(let t=0;t<nm*8&&Object.keys(ents).filter(k=>ents[k].kind==='monster').length<nm;t++){
     const ri=1+~~(Math.random()*(rooms.length-2));const r=rooms[ri];
@@ -1452,7 +1452,7 @@ function buildMap(){
     const k=`${mx},${my}`;
     if(!ents[k]&&!(mx===G.px&&my===G.py)&&g[my][mx]===1){
       const el=Math.random()<eliteChanceBase;
-      const pool=MONS.filter(m=>el?m.type==='elite':m.type==='normal');
+      const pool=MONS.filter(m=>el&&G.floor>=20?m.type==='elite':m.type==='normal');
       const tm=rnd(pool);
       const mLv=Math.max(1,G.floor*2+(el?3:0)+randI(-2,2));
       ents[k]={kind:'monster',...tm,lv:mLv,hp:~~(tm.hp*sc),mhp:~~(tm.hp*sc),atk:~~(tm.atk*sc),def:~~(tm.def*sc),xpG:~~(tm.xp*sc),gG:tm.gold,ext:true};
@@ -2504,7 +2504,13 @@ function autoSelectWeakest(cb){
     cards[0].click();
   }
 }
-function endPT(){G.cb.phase='enemy';refreshCombat();setTimeout(enemyTurn,900);}
+function endPT(){
+  if((G.p.skills||[]).find(s=>s.id==='domain')){
+    if(G.p.mp>=2){G.p.mp-=2;}
+    else{clog('👑 Domaine suspendu — PM insuffisants !','clsys');}
+  }
+  G.cb.phase='enemy';refreshCombat();setTimeout(enemyTurn,900);
+}
 let G_shadowCombatOpen=true;
 function toggleShadowCombat(){
   G_shadowCombatOpen=!G_shadowCombatOpen;
