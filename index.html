@@ -20,6 +20,9 @@
   <div class="t-ver" id="tver">ROGUELITE EDITION · v2.0</div>
   <div id="prestige-badge" style="display:none;padding:3px 14px;border-radius:20px;font-family:var(--fo);font-size:.72rem;letter-spacing:2px;border:1px solid;margin-top:-8px"></div>
   <div class="frag-display" id="frag-display">💠 0 Fragments du Monarque</div>
+  <div style="font-size:.62rem;color:var(--gold2);text-align:center;padding:4px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:4px;max-width:380px;line-height:1.6">
+  ⚠ Pensez à sauvegarder régulièrement votre progression avec <b>💾 SAUVEGARDER PROGRESSION</b> — le cache du navigateur peut être vidé à tout moment.
+  </div>
   <button class="btn-ar" style="margin-top:0;background:rgba(245,158,11,.15);border-color:var(--gold2);color:var(--gold3);padding:10px 36px;font-size:.82rem" onclick="openMShop()">⚜ SHOP DU MONARQUE</button>
   <button class="btn-ar" style="margin-top:0;background:rgba(6,182,212,.1);border-color:var(--cyan2);color:var(--cyan2);padding:8px 28px;font-size:.78rem" onclick="openHistory()">📜 HISTORIQUE DES RUNS</button>
   <button class="btn-ar" style="margin-top:0;background:rgba(52,211,153,.1);border-color:var(--green2);color:var(--green3);padding:8px 28px;font-size:.78rem" onclick="openQuestPanel()">🎯 DÉFIS DU JOUR</button>
@@ -1924,7 +1927,11 @@ function nextFloor(){
   G._portal=false;
   const p=G.p;p.hp=p.mhp;p.mp=p.mmp;
   G.sh.forEach(s=>s.hp=s.mhp);
-
+  if(!G._lastSaveReminder)G._lastSaveReminder=Date.now();
+  if(Date.now()-G._lastSaveReminder>30*60*1000){
+    G._lastSaveReminder=Date.now();
+    notify('💾 N\'oubliez pas de sauvegarder votre progression !','nlv');
+  }
   if(!G._inPortal&&!isCheckpointFloor(G.floor)&&Math.random()<0.03){
     G._portal=true;
   }
@@ -3770,6 +3777,7 @@ let G_legacy={selectedSh:null,selectedEq:null,fragsEarned:0};
 
 function showGO(){
   sfxDeath();stopCombatMusic();showScr('gameover');
+  notify('💾 Pensez à exporter votre progression depuis le menu principal !','nlv');
   const p=G.p;
   const floorsThisRun=G.floor-1;
   try{
