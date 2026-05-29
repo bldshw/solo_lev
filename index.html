@@ -67,6 +67,7 @@
     <div class="gldb"><span style="font-size:.83rem">💰</span><div class="gldv" id="pgold">0</div><div style="font-size:.57rem;color:var(--gold);margin-left:2px">OR</div></div>
     <div class="svr">
       <button class="smb" onclick="saveGame()">💾 SAVE</button>
+      <button class="smb" onclick="abandonRun()" style="color:var(--red3);border-color:rgba(239,68,68,.3)">🏳 ABANDON</button>
       <button class="smb" id="audio-btn" onclick="toggleMute()" style="min-width:32px">🔊</button>
       <button class="smb" onclick="triggerLoad()">📂 LOAD</button>
       <input type="file" id="ldinput" accept=".json" style="display:none" onchange="loadFile(event)">
@@ -2513,13 +2514,7 @@ function autoSelectWeakest(cb){
     cards[0].click();
   }
 }
-function endPT(){
-  if((G.p.skills||[]).find(s=>s.id==='domain')){
-    if(G.p.mp>=2){G.p.mp-=2;}
-    else{clog('👑 Domaine suspendu — PM insuffisants !','clsys');}
-  }
-  G.cb.phase='enemy';refreshCombat();setTimeout(enemyTurn,900);
-}
+function endPT(){G.cb.phase='enemy';refreshCombat();setTimeout(enemyTurn,900);}
 let G_shadowCombatOpen=true;
 function toggleShadowCombat(){
   G_shadowCombatOpen=!G_shadowCombatOpen;
@@ -4147,6 +4142,12 @@ function importProgress(ev){
   }catch{notify('Fichier invalide !','nbad');}};
   r.readAsText(f);ev.target.value='';
 }
+function abandonRun(){
+  if(!confirm('⚠ Abandonner cette run ? Votre progression in-game sera perdue.'))return;
+  if(G.cb)G.cb=null;
+  stopCombatMusic();
+  showGO();
+}
 function saveGame(){
   saveFullProgress();
   try{localStorage.setItem(SK,JSON.stringify(G));notify('💾 Sauvegarde + téléchargement...','nsys');}catch(e){}
@@ -4332,7 +4333,7 @@ function renderCkpt(){
     const grid=document.createElement('div');grid.className='ckpt-grid';el.appendChild(grid);
     items.forEach(item=>{
       const qty=G_ckpt.cart[item.id]||0;
-      const maxed=false;
+      const maxed=item.effect==='named_shadow'?qty>=1:false;
       const canAfford=G_ckpt.remaining>=item.cost;
       const div=document.createElement('div');div.className='ckpt-item'+(maxed?' bought':'');
       const isLocked=item.locked===true;
@@ -4371,12 +4372,20 @@ function applyCkptCart(){
           const tmpls=SHADTMPLS.filter(t=>t.role===role);
           const t=tmpls.length?rnd(tmpls):SHADTMPLS[0];
           const sh=_mkShadowFromTemplate(t,floor,lvBoost);
+          const rd=SHADOW_RANKS.find(r=>r.id===sh.rank);
+          if(rd&&rd.ascendAt!==null)sh.lv=Math.min(sh.lv,rd.ascendAt-1);
           if(G.sh.length<maxSh())G.sh.push(sh);
         });
       }
       else if(item.effect==='named_shadow'){
         const t=SHADTMPLS.find(s=>s.name===item.shadowName);
-        if(t&&G.sh.length<maxSh()){const sh=_mkShadowFromTemplate(t,floor,lvBoost);G.sh.push(sh);}
+        if(t&&G.sh.length<maxSh()){
+          const sh=_mkShadowFromTemplate(t,floor,lvBoost);
+          // Plafonner le niveau à ascendAt-1 pour ne pas perdre de niveaux
+          const rd=SHADOW_RANKS.find(r=>r.id===sh.rank);
+          if(rd&&rd.ascendAt!==null)sh.lv=Math.min(sh.lv,rd.ascendAt-1);
+          G.sh.push(sh);
+        }
       }
       else if(item.effect==='random_eq'){
         const it=rollItemAtFloor(floor);it.r=item.rar;G.p.inv.push(it);
