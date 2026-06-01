@@ -218,7 +218,6 @@
         </div>
       </div>
       <button class="legacy-confirm" id="legacy-confirm-btn" onclick="confirmLegacy()">⚜ Confirmer l'Héritage &amp; Recommencer</button>
-      <button class="legacy-confirm" style="background:rgba(245,158,11,.1);border-color:var(--gold);color:var(--gold3);margin-top:6px" onclick="openMShop()">⚜ Shop du Monarque</button>
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
       <button class="brest" id="brest-btn" onclick="restartGame()">RECOMMENCER</button>
@@ -1338,14 +1337,14 @@ function newGame(){
     sh:[],map:null,px:0,py:0,fog:null,ents:null,cb:null,pr:null,arAtt:0};
 
   const leg=getLegacy();
-  if(leg.pendingSh){
-
-    const sh={...leg.pendingSh,hp:leg.pendingSh.mhp};
+  const pendingShs=leg.pendingShs||[];
+  if(leg.pendingSh&&pendingShs.length===0)pendingShs.push(leg.pendingSh);
+  pendingShs.forEach(psh=>{
+    const sh={...psh,hp:psh.mhp};
     G.sh.push(sh);
-    leg.pendingSh=null;
-    saveLegacy(leg);
     notify(`🌑 Héritage : ${sh.name} (Lv${sh.lv}) vous rejoint !`,'nsh');
-  }
+  });
+  if(pendingShs.length){leg.pendingShs=[];leg.pendingSh=null;saveLegacy(leg);}
   if(leg.pendingEq){
     const eq={...leg.pendingEq};
 
@@ -2032,18 +2031,7 @@ function arChanceFromEnemy(ent){
 
   return Math.max(20,Math.min(70+ariseBonus,base));
 }
-let G_domainTimer=null;
-function startDomainTimer(){
-  if(G_domainTimer)clearInterval(G_domainTimer);
-  G_domainTimer=setInterval(()=>{
-    if(!G.cb)return stopDomainTimer();
-    if(G.p.mp>=2){G.p.mp-=2;refreshCombat();}
-
-  },1000);
-}
-function stopDomainTimer(){
-  if(G_domainTimer){clearInterval(G_domainTimer);G_domainTimer=null;}
-}
+function stopDomainTimer(){} // conservé pour compatibilité
 function startCombat(ent,key){
   G.cb={ent,key,phase:'player',dodge:false,stun:false,turn:0};G.arAtt=0;
   G.p._combatCrits=0;G.p._combatSkillUsed=false;G.p._combatDmgTaken=0;
@@ -2052,8 +2040,7 @@ function startCombat(ent,key){
   if(ent.kind==='boss')sfxBossEncounter();else sfxAttack();
   startCombatMusic(ent.kind==='boss');
   clog(`⚔ Combat contre ${ent.name} (Niv.${ent.lv||'?'})${ent.kind==='boss'?' — ⚠ BOSS':''}!`,'clsys');
-  if((G.p.skills||[]).find(sk=>sk.id==='domain'))startDomainTimer();
-}
+  }
 function refreshCombat(){
   if(!G.cb)return;
   const p=G.p,e=G.cb.ent;
@@ -2299,7 +2286,7 @@ function usePotionInCombat(item){
   if(cs.int_perm){p.int+=cs.int_perm;clog(`🧫 Intelligence +${cs.int_perm} permanent !`,'cll');}
   if(cs.vit_perm){p.vit+=cs.vit_perm;clog(`💊 Vitalité +${cs.vit_perm} permanent !`,'cll');}
   p.inv.splice(idx,1);
-
+  if((G.p.skills||[]).find(s=>s.id==='domain')&&G.p.mp>=2)G.p.mp-=2;
   endPT();
 }
 function estimateSkillDmg(sk){
@@ -2502,7 +2489,7 @@ function tryFlee(){
   const _penalt=_e.kind==='boss'?-0.25:(_e.type==='elite'?-0.12:0);
   const _fleeChance=Math.min(0.90,Math.max(0.08,0.40+_bonus+_penalt));
   clog(`🏃 Fuite — ${~~(_fleeChance*100)}% de chance (AGI ${effAgi()} vs ennemi ~${_eAgi})…`,'clsys');
-  if(Math.random()<_fleeChance){stopDomainTimer();clog('🏃 Fuite réussie !','clsys');G.p._hasFled=true;G.cb=null;showScr('game');renderDungeon();renderLeft();}
+  if(Math.random()<_fleeChance){clog('🏃 Fuite réussie !','clsys');G.p._hasFled=true;G.cb=null;showScr('game');renderDungeon();renderLeft();}
   else{clog('❌ Fuite impossible !','clsys');G.cb._fleeWarned=false;endPT();}
 }
 let G_autoDismiss=false;
@@ -2926,8 +2913,10 @@ function ascendShadow(s){
     notify(`🌟 ${s.name} est devenu MARÉCHAL des Ombres !`,'nlv');
   } else {
 
+   const rd=shadowRankDef(s);
+    const excessLevels=Math.max(0,s.lv-rd.ascendAt);
+    s.lv=1+excessLevels;
     s.xp=0;
-    s.lv=1;
     s.rank=nextRank.id;
     sfxAscend();
     // Visual evolution check
@@ -3696,18 +3685,11 @@ function getUpgradeEffect(effect){
   return lv;
 }
 function calcFragments(floorsCleared,normalKills,eliteKills,bossKills,goldLeft){
-  const maxFloor=floorsCleared;
-  let base=0;
-  for(let f=1;f<=maxFloor;f++){
-    if(f<=10)base+=10;
-    else if(f<=30)base+=20;
-    else if(f<=60)base+=35;
-    else if(f<=90)base+=55;
-    else base+=80;
-  }
-  const kills=normalKills*1+eliteKills*5+bossKills*20;
-  const goldBonus=~~(goldLeft*.05);
-  return base+kills+goldBonus;
+  const floorMult=Math.max(1,floorsCleared/10);
+  const base=floorsCleared*2;
+  const kills=(normalKills*1+eliteKills*4+bossKills*10)*floorMult;
+  const goldBonus=~~(goldLeft*.005*floorMult);
+  return~~(base+kills+goldBonus);
 }
 function updateFragDisplay(){
   const el=document.getElementById('frag-display');
@@ -3880,9 +3862,20 @@ function showGO(){
       const stats=`Lv${sh.lv} · ATK:${sh.atk} DEF:${sh.def} PV:${sh.mhp}`;
       card.innerHTML=`<div class="leg-sh-ico">${sh.ico}</div><div class="leg-sh-inf"><div class="leg-sh-nm">${sh.name}</div><div class="leg-sh-det">${sh.cls} · ${stats}</div></div><div style="font-size:.6rem;color:var(--gold2);font-family:var(--fo)">XP Lv${sh.lv}</div>`;
       card.onclick=()=>{
-        document.querySelectorAll('.leg-sh-card').forEach(c=>c.classList.remove('selected'));
-        card.classList.add('selected');
-        G_legacy.selectedSh={...sh};
+        if(card.classList.contains('selected')){
+          card.classList.remove('selected');
+          G_legacy.selectedShs=G_legacy.selectedShs||[];
+          G_legacy.selectedShs=G_legacy.selectedShs.filter(s=>s.name!==sh.name);
+        } else {
+          G_legacy.selectedShs=G_legacy.selectedShs||[];
+          if(G_legacy.selectedShs.length<shSlots){
+            card.classList.add('selected');
+            G_legacy.selectedShs.push({...sh});
+          } else {
+            notify(`Maximum ${shSlots} ombre(s) sélectionnable(s) !`,'nbad');
+          }
+        }
+        G_legacy.selectedSh=G_legacy.selectedShs?.[0]||null;
         checkLegacyReady();
       };
       shList.appendChild(card);
@@ -3939,7 +3932,8 @@ function saveLegacy(obj){try{localStorage.setItem('slm_pend',JSON.stringify(obj)
 
 function confirmLegacy(){
   const leg=getLegacy();
-  leg.pendingSh=G_legacy.selectedSh||null;
+  leg.pendingShs=G_legacy.selectedShs||[];
+  leg.pendingSh=G_legacy.selectedShs?.[0]||null;
   leg.pendingEq=G_legacy.selectedEq||null;
   saveLegacy(leg);
   G={};newGame();
@@ -4372,8 +4366,7 @@ function applyCkptCart(){
           const tmpls=SHADTMPLS.filter(t=>t.role===role);
           const t=tmpls.length?rnd(tmpls):SHADTMPLS[0];
           const sh=_mkShadowFromTemplate(t,floor,lvBoost);
-          const rd=SHADOW_RANKS.find(r=>r.id===sh.rank);
-          if(rd&&rd.ascendAt!==null)sh.lv=Math.min(sh.lv,rd.ascendAt-1);
+          
           if(G.sh.length<maxSh())G.sh.push(sh);
         });
       }
@@ -4381,9 +4374,7 @@ function applyCkptCart(){
         const t=SHADTMPLS.find(s=>s.name===item.shadowName);
         if(t&&G.sh.length<maxSh()){
           const sh=_mkShadowFromTemplate(t,floor,lvBoost);
-          // Plafonner le niveau à ascendAt-1 pour ne pas perdre de niveaux
-          const rd=SHADOW_RANKS.find(r=>r.id===sh.rank);
-          if(rd&&rd.ascendAt!==null)sh.lv=Math.min(sh.lv,rd.ascendAt-1);
+          
           G.sh.push(sh);
         }
       }
