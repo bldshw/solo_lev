@@ -3853,8 +3853,15 @@ function showGO(){
     const lvKeepPct=getUpgradeEffect('sh_lv_keep')||0;
     const lvKeepTxt=lvKeepPct>0?` · Récupérée à ${lvKeepPct}% du niveau`:'· Récupérée niveau 1';
     document.getElementById('leg-sh-sub').textContent=`Choisissez jusqu'à ${shSlots} ombre(s) à conserver${lvKeepTxt}.`;
-    const sorted=[...G.sh].sort((a,b)=>b.lv-a.lv);
+    const SPECIAL_SHADOW_NAMES=Object.keys(SPECIAL_SHADOW_DEFS).filter(n=>n!=='Min Byung-Gu');
+    const sorted=[...G.sh].filter(s=>!SPECIAL_SHADOW_NAMES.includes(s.fromEnemy||s.name)).sort((a,b)=>b.lv-a.lv);
     shList.innerHTML='';
+    if(sorted.length===0){
+      shList.innerHTML='<div class="legacy-none">Aucune ombre conservable (les ombres spéciales ne peuvent pas être héritées).</div>';
+      G_legacy.selectedShs=[];
+      checkLegacyReady();
+      return;
+    }
     sorted.forEach((sh,i)=>{
       const card=document.createElement('div');
       card.className='leg-sh-card';
@@ -4277,7 +4284,10 @@ function buildCkptItems(floor){
     const sc=t.role==='tank'||t.role==='healer'?25:20;
     const _sdef=SPECIAL_SHADOW_DEFS[t.name];
     if(_sdef&&_sdef.floor&&floor<_sdef.floor)return;
-    items.push({id:'sh_'+t.name.replace(/\s/g,'_'),cat:'OMBRES',ico:t.ico,nm:t.name,desc:(t.cls+' · '+(t.passive||'')),cost:sc,maxQty:1,effect:'named_shadow',shadowName:t.name,locked:!isSpecialShadowUnlocked(t.name),unlockHint:getSpecialShadowHint(t.name)});
+    const alreadyInTeam=G.sh&&G.sh.some(s=>(s.fromEnemy||s.name)===t.name);
+    const isLocked=!isSpecialShadowUnlocked(t.name)||alreadyInTeam;
+    const lockHint=alreadyInTeam?`🌑 ${t.name} est déjà dans votre armée`:getSpecialShadowHint(t.name);
+    items.push({id:'sh_'+t.name.replace(/\s/g,'_'),cat:'OMBRES',ico:t.ico,nm:t.name,desc:(t.cls+' · '+(t.passive||'')),cost:sc,maxQty:1,effect:'named_shadow',shadowName:t.name,locked:isLocked,unlockHint:lockHint});
   });
   items.push({id:'sh_lv_boost',cat:'OMBRES',ico:'⭐',nm:'+1 niveau ombres',desc:'Toutes les ombres achetées démarrent +1 niveau',cost:15,maxQty:10,effect:'shadow_level_boost',val:1});
 
