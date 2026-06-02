@@ -1337,11 +1337,10 @@ function newGame(){
     sh:[],map:null,px:0,py:0,fog:null,ents:null,cb:null,pr:null,arAtt:0};
 
   const leg=getLegacy();
-  const pendingShs=leg.pendingShs||[];
-  if(leg.pendingSh&&pendingShs.length===0)pendingShs.push(leg.pendingSh);
+  const pendingShs=leg.pendingShs&&leg.pendingShs.length>0?leg.pendingShs:(leg.pendingSh?[leg.pendingSh]:[]);
   pendingShs.forEach(psh=>{
     const sh={...psh,hp:psh.mhp};
-    G.sh.push(sh);
+    if(G.sh.length<maxSh())G.sh.push(sh);
     notify(`🌑 Héritage : ${sh.name} (Lv${sh.lv}) vous rejoint !`,'nsh');
   });
   if(pendingShs.length){leg.pendingShs=[];leg.pendingSh=null;saveLegacy(leg);}
@@ -3828,7 +3827,7 @@ function showGO(){
   const eqKeep=getUpgradeEffect('eq_keep');
   const hasLegacy=shKeep>0||eqKeep>0;
 
-  G_legacy={selectedSh:null,selectedEq:null,fragsEarned};
+  G_legacy={selectedSh:null,selectedShs:[],selectedEq:null,fragsEarned};
 
   const legSec=document.getElementById('legacy-section');
   const brest=document.getElementById('brest-btn');
@@ -3922,7 +3921,8 @@ function showGO(){
 function checkLegacyReady(){
   const shSlots=getUpgradeEffect('sh_keep');
   const eqKeep2=getUpgradeEffect('eq_keep');
-  const shOk=shSlots===0||G.sh.length===0||G_legacy.selectedSh!==null;
+  const selectedCount=(G_legacy.selectedShs||[]).length;
+  const shOk=shSlots===0||G.sh.length===0||(selectedCount>0&&selectedCount<=shSlots);
   const eqOk=eqKeep2===0||Object.values(G.p.eq).filter(Boolean).length===0||G_legacy.selectedEq!==null;
   document.getElementById('legacy-confirm-btn').disabled=!(shOk&&eqOk);
 }
